@@ -112,6 +112,8 @@ if (app.Environment.IsDevelopment()||app.Environment.IsProduction())
     app.UseSwaggerUI();
 }
 
+app.UseCors("AllowAll");
+
 app.UseAuthentication();
 app.UseAuthorization();
 
