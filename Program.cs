@@ -38,6 +38,13 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer(); // <-- Important for Swagger
 builder.Services.AddSwaggerGen();          // <-- This registers Swagger
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll",
+        builder => builder.AllowAnyOrigin()
+                          .AllowAnyMethod()
+                          .AllowAnyHeader());
+});
 // JWT config continues...
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var key = Encoding.ASCII.GetBytes(jwtSettings["Key"]);
@@ -101,7 +108,7 @@ var app = builder.Build();
 
 if (app.Environment.IsDevelopment()||app.Environment.IsProduction())
 {
-    app.UseSwagger();      // <-- These depend on the services being registered above
+    app.UseSwagger(); 
     app.UseSwaggerUI();
 }
 
