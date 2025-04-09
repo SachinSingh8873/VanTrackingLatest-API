@@ -1,0 +1,6 @@
+@VanDriverAPI_HostAddress = http://localhost:5118
+
+GET {{VanDriverAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
