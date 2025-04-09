@@ -40,7 +40,9 @@ namespace VanDriverAPI.App_Data
         public DataLayer(IConfiguration configuration)
         {
             _configuration = configuration;
-            var con = _configuration["ConnectionStrings:DBCon"];
+            //var con = _configuration["ConnectionStrings:DBCon"];
+            var con = _configuration.GetConnectionString("DefaultConnection");
+
 
             //Console.WriteLine(con);
             if (con != null)
@@ -83,46 +85,22 @@ namespace VanDriverAPI.App_Data
 
             }
         }
-        public DataSet GetFunctionaryType(int code, int coded1)
-        {
-            DataSet ds = new DataSet();
-            using (SqlConnection conn = new SqlConnection(ConnectionString))
-            {
 
-                using (SqlCommand command = new SqlCommand("select ManPowerCode,  Designation from View_MasterManPower where manpowercode='" + code + "' or manpowercode='" + coded1 + "'  ORDER BY ManPowerCode", conn))
-                {
-                    try
-                    {
-                        SqlDataAdapter dataAdapter = new SqlDataAdapter(command);
-                        dataAdapter.Fill(ds);
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Error: {ex.Message}");
-                        ds = null;
-                    }
-                }
-            }
-            return ds;
-        }
-
-        public DataSet LoginCredentials(string loginId, string password, string examSession, string ipAddress)
+        public DataSet LoginCredentials(string loginId, string password)
         {
             DataSet ds = new DataSet();
 
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             {
-                using (SqlCommand command = new SqlCommand("React_ReplyPerforma_Login", conn))
+                using (SqlCommand command = new SqlCommand("LoginAuthentication", conn))
                 {
                     command.CommandType = CommandType.StoredProcedure;
-                    command.Parameters.AddWithValue("@uniqueId", loginId);
-                    command.Parameters.AddWithValue("@ExamyearSession", examSession);
-                    command.Parameters.AddWithValue("@IpLocation", ipAddress);
-                    command.Parameters.AddWithValue("@password", password);
+                    command.Parameters.AddWithValue("@UserID", loginId);
+                    command.Parameters.AddWithValue("@Password", password);
 
                     try
                     {
-                        conn.Open(); // Ensure the connection is opened
+                        conn.Open(); 
                         using (SqlDataAdapter dataAdapter = new SqlDataAdapter(command))
                         {
                             dataAdapter.Fill(ds);
@@ -130,14 +108,12 @@ namespace VanDriverAPI.App_Data
                     }
                     catch (Exception ex)
                     {
-                        // Log the error (consider using a logging framework)
                         Console.WriteLine($"Error: {ex.Message}");
-                        // Optionally, you can throw the exception or handle it as needed
                     }
                 }
             }
 
-            return ds; // Return the DataSet (could be empty if an error occurred)
+            return ds;
         }
 
 

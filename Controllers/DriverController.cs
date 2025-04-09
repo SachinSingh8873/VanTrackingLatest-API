@@ -27,49 +27,61 @@ namespace VanDriverAPI.Controllers
     [Route("api/[controller]")]
     public class DriverController : ControllerBase
     {
-        //private readonly DataLayer _dataLayer;
+        private readonly DataLayer _dataLayer;
         private readonly IConfiguration _configuration;
 
-        public DriverController(IConfiguration configuration)
+        public DriverController(IConfiguration configuration,DataLayer dataLayer)
         {
-            //_dataLayer = dataLayer;
+            _dataLayer = dataLayer;
             _configuration = configuration;
         }
 
-
-
         [HttpPost("login")]
-        public IActionResult Login([FromBody] UserLogin user)
-        //{
-        //string connectionString = _configuration.GetConnectionString("DefaultConnection");
-
-        //using (SqlConnection conn = new SqlConnection(connectionString))
+        public IActionResult Login([FromBody] JsonElement json)
         {
-            //string query = "SELECT COUNT(*) FROM Users WHERE Email = @Email AND Password = @Password";
-            //SqlCommand cmd = new SqlCommand(query, conn);
-            //cmd.Parameters.AddWithValue("@Email", user.Email);
-            //cmd.Parameters.AddWithValue("@Password", user.Password);
+            string userId, password;
 
-            //conn.Open();
-            if (user == null || string.IsNullOrEmpty(user.Email) || string.IsNullOrEmpty(user.Password))
+            if (json.TryGetProperty("userId", out JsonElement userIdElementValue) &&
+                json.TryGetProperty("password", out JsonElement passwordElementValue))
             {
-                return BadRequest("Invalid login attempt");
-            }
+                userId = userIdElementValue.GetString();
+                password = passwordElementValue.GetString();
 
-            //int count = (int)cmd.ExecuteScalar();
-            int count = 1;
+                try
+                {
+                    var ds = _dataLayer.LoginCredentials(userId, password);
+                    
+                    var status = ds.Tables[0].Rows[0]["status"].ToString();
 
-            if (count == 1)
-            {
-                var token = GenerateJwtToken(user.Email);
-                return Ok(new { token });
+                        if (status == "Successs")
+                        {
+                            // Generate Token
+                            var token = GenerateJwtToken(userId);
+
+                            return Ok(new
+                            {
+                                status = true,
+                                message = "Login Successful",
+                                token = token
+                            });
+                        }
+                        else
+                        {
+                            return Unauthorized(new { status = false, message = "Invalid Credentials" });
+                        }
+                  
+                }
+                catch (Exception ex)
+                {
+                    return BadRequest(new { status = false, message = "Error: " + ex.Message });
+                }
             }
             else
             {
-                return Unauthorized("Invalid credentials");
+                return BadRequest(new { status = false, message = "Invalid JSON Format" });
             }
         }
-        //}
+
 
         private string GenerateJwtToken(string email)
         {
