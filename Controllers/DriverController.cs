@@ -39,48 +39,49 @@ namespace VanDriverAPI.Controllers
         [HttpPost("login")]
         public IActionResult Login([FromBody] JsonElement json)
         {
-            string userId, password;
-
-            if (json.TryGetProperty("userId", out JsonElement userIdElementValue) &&
-                json.TryGetProperty("password", out JsonElement passwordElementValue))
+            try
             {
-                userId = userIdElementValue.GetString();
-                password = passwordElementValue.GetString();
-
-                try
+                if (!json.TryGetProperty("userId", out JsonElement userIdElement) ||
+                    !json.TryGetProperty("password", out JsonElement passwordElement))
                 {
-                    var ds = _dataLayer.LoginCredentials(userId, password);
-                    
-                    var status = ds.Tables[0].Rows[0]["status"].ToString();
-
-                        if (status == "Successs")
-                        {
-                            // Generate Token
-                            var token = GenerateJwtToken(userId);
-
-                            return Ok(new
-                            {
-                                status = true,
-                                message = "Login Successful",
-                                token = token
-                            });
-                        }
-                        else
-                        {
-                            return Unauthorized(new { status = false, message = "Invalid Credentials" });
-                        }
-                  
+                    return BadRequest(new { status = false, message = "Invalid JSON Format" });
                 }
-                catch (Exception ex)
+
+                string userId = userIdElement.GetString();
+                string password = passwordElement.GetString();
+
+                var ds = _dataLayer.LoginCredentials(userId, password);
+
+                if (ds.Tables.Count == 0 || ds.Tables[0].Rows.Count == 0)
                 {
-                    return BadRequest(new { status = false, message = "Error: " + ex.Message });
+                    return Unauthorized(new { status = false, message = "Invalid Credentials" });
+                }
+
+                string status = ds.Tables[0].Rows[0]["status"].ToString();
+
+                if (status.Equals("Successs", StringComparison.OrdinalIgnoreCase))  // Case-insensitive check
+                {
+                    var token = GenerateJwtToken(userId);
+
+                    return Ok(new
+                    {
+                        status = true,
+                        message = "Login Successful",
+                        data = JsonConvert.SerializeObject(ds.Tables[0]),
+                        token = token
+                    });
+                }
+                else
+                {
+                    return Unauthorized(new { status = false, message = "Invalid Credentials" });
                 }
             }
-            else
+            catch (Exception ex)
             {
-                return BadRequest(new { status = false, message = "Invalid JSON Format" });
+                return BadRequest(new { status = false, message = "Error: " + ex.Message });
             }
         }
+
 
 
         private string GenerateJwtToken(string email)
